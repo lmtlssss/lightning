@@ -32,6 +32,9 @@ jobs:
 
   build:
     name: Build ${{ matrix.target == 'lightningd-vls-signer' && 'vls' || 'normal' }} / ${{ matrix.platform }}
+    # Buildx pushes image digests, so this job is a publication boundary.
+    if: github.repository == 'ElementsProject/lightning' && github.ref_type == 'tag' && startsWith(github.ref, 'refs/tags/v') && inputs.version == github.ref_name
+    environment: release-docker
     needs: plan
     strategy:
       fail-fast: false
