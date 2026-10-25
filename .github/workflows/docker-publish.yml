@@ -16,6 +16,8 @@ on:
 jobs:
   publish:
     name: Tag and publish ${{ matrix.target }}
+    if: github.repository == 'ElementsProject/lightning' && github.ref_type == 'tag' && startsWith(github.ref, 'refs/tags/v') && inputs.version == github.ref_name
+    environment: release-docker
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
