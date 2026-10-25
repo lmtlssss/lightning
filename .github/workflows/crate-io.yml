@@ -8,6 +8,12 @@ on:
 
 jobs:
   release_rust:
+    # Rust crates are published from the protected master branch only.
+    # A manual dispatch on a contributor branch must never receive the token.
+    if: github.repository == 'ElementsProject/lightning' && github.ref == 'refs/heads/master'
+    environment: release-cargo
+    permissions:
+      contents: read
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v6
