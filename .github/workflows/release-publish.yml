@@ -13,6 +13,10 @@ on:
 jobs:
   release:
     name: Sign and prepare release draft
+    if: github.repository == 'ElementsProject/lightning' && github.ref_type == 'tag' && startsWith(github.ref, 'refs/tags/v') && inputs.version == github.ref_name
+    environment: release-signing
+    permissions:
+      contents: write
     runs-on: ubuntu-24.04
     steps:
       - name: Git checkout
