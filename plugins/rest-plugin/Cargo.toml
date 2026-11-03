@@ -6,7 +6,7 @@ license = "MIT"
 description = "Transforms RPC calls into REST APIs"
 homepage = "https://github.com/ElementsProject/lightning/tree/master/plugins"
 repository = "https://github.com/ElementsProject/lightning"
-rust-version.workspace = true
+rust-version = "1.88.0"
 
 [dependencies]
 anyhow = "1"
@@ -51,4 +51,4 @@ socketioxide = { version = "0.16", features = ["state"] }
 
 cln-plugin = { workspace = true }
 cln-rpc = { workspace = true }
-utoipa-swagger-ui = { version = "9.0.0", features = ["vendored", "axum"] }
+utoipa-swagger-ui = { version = "10.0.2", features = ["vendored", "axum"] }

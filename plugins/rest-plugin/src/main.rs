@@ -119,6 +119,14 @@ async fn main() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
+/// Builds the documentation routes from this plugin's generated API document.
+fn build_swagger_router(swagger_path: String) -> Router {
+    let document =
+        serde_json::to_value(ApiDoc::openapi()).expect("generated OpenAPI document must serialize");
+    Router::new()
+        .merge(SwaggerUi::new(swagger_path).external_url_unchecked("/swagger.json", document))
+}
+
 async fn run_rest_server(
     plugin: Plugin<PluginState>,
     clnrest_options: ClnrestOptions,
@@ -138,8 +146,7 @@ async fn run_rest_server(
         clnrest_options.swagger.clone()
     };
 
-    let swagger_router =
-        Router::new().merge(SwaggerUi::new(swagger_path).url("/swagger.json", ApiDoc::openapi()));
+    let swagger_router = build_swagger_router(swagger_path);
 
     let root_router = Router::new()
         .route("/", get(|| async { "Hello, World!" }))
@@ -280,4 +287,57 @@ fn log_error(error: String) {
                           "method": "log",
                           "params": {"level":"warn", "message":error}})
     );
+}
+
+#[cfg(test)]
+mod documentation_tests {
+    use super::*;
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode},
+    };
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
+
+    #[tokio::test]
+    async fn documentation_routes_preserve_schema_and_assets() {
+        let app = build_swagger_router("/docs".to_string());
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/swagger.json")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        let served: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(served, serde_json::to_value(ApiDoc::openapi()).unwrap());
+
+        for path in [
+            "/docs/",
+            "/docs/swagger-ui.css",
+            "/docs/swagger-ui-bundle.js",
+        ] {
+            let response = app
+                .clone()
+                .oneshot(Request::builder().uri(path).body(Body::empty()).unwrap())
+                .await
+                .unwrap();
+            assert_eq!(response.status(), StatusCode::OK, "{path}");
+            assert!(
+                response
+                    .into_body()
+                    .collect()
+                    .await
+                    .unwrap()
+                    .to_bytes()
+                    .len()
+                    > 100
+            );
+        }
+    }
 }
